@@ -1,31 +1,40 @@
-from contextlib import asynccontextmanager
+from fastapi import FastAPI, HTTPException
 
-from fastapi import FastAPI
-
-from memory_catalog import seed_demo
-from routers import catalog
-
-API_PREFIX = "/catalog"
-
-
-@asynccontextmanager
-async def lifespan(_app: FastAPI):
-    seed_demo()
-    yield
-
+from schemas.product import Product, ProductCreate
 
 app = FastAPI(
-    title="BulbStore catalog (прототип)",
-    description="In-memory API по структуре BulbStore_postman.json (без БД).",
-    version="0.2.0",
-    lifespan=lifespan,
+    title="Пример FastAPI",
+    description="Простое in-memory API товаров",
+    version="0.1.0",
 )
-
-app.include_router(catalog.router, prefix=API_PREFIX)
 
 
 @app.get("/")
 def read_root():
-    return {
-        "message": "Каталог: префикс /catalog (как baseUrl в Postman). Документация: /docs",
-    }
+    return {"message": "Привет! Интерактивная документация: /docs и /redoc"}
+
+
+products: list[Product] = []
+_next_id: int = 1
+
+
+@app.post("/products", response_model=Product, status_code=201)
+def add_product(payload: ProductCreate) -> Product:
+    global _next_id
+    product = Product(id=_next_id, **payload.model_dump())
+    _next_id += 1
+    products.append(product)
+    return product
+
+
+@app.get("/products", response_model=list[Product])
+def list_products() -> list[Product]:
+    return products
+
+
+@app.get("/products/{product_id}", response_model=Product)
+def get_product(product_id: int) -> Product:
+    for item in products:
+        if item.id == product_id:
+            return item
+    raise HTTPException(status_code=404, detail="Товар не найден")
