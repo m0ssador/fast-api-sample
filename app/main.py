@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
-
 from schemas.product import Product, ProductCreate
+import asyncpg
+from db.db import DATABASE_URL
 
 app = FastAPI(
     title="Пример FastAPI",
@@ -38,3 +39,16 @@ def get_product(product_id: int) -> Product:
         if item.id == product_id:
             return item
     raise HTTPException(status_code=404, detail="Товар не найден")
+
+@app.get("/health")
+async def root():
+    databases = await get_databases()
+    return {"message": databases}
+
+async def get_databases():
+  conn = await asyncpg.connect(DATABASE_URL)
+  try:
+    result = await conn.fetch("SELECT datname FROM pg_database")
+    return [record['datname'] for record in result]
+  finally:
+    await conn.close()
