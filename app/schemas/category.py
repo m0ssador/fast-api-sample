@@ -18,6 +18,12 @@ class CategoryCreate(CategoryBase):
 class Category(CategoryBase):
     id: int = Field(..., ge=1)
 
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+        from_attributes=True,
+    )
+
 
 class CategoryUpdate(BaseModel):
     model_config = ConfigDict(

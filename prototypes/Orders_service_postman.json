@@ -1,0 +1,50 @@
+{
+  "info": {
+    "name": "Orders Service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create order",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"items\": [\n    { \"productId\": 1, \"quantity\": 2 }\n  ],\n  \"customerEmail\": \"buyer@example.com\"\n}"
+        },
+        "url": "{{baseUrl}}/"
+      }
+    },
+    {
+      "name": "List orders",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/?page=1&size=20"
+      }
+    },
+    {
+      "name": "Get order by ID",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/{{orderId}}"
+      }
+    },
+    {
+      "name": "Update order status",
+      "request": {
+        "method": "PATCH",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"confirmed\"\n}"
+        },
+        "url": "{{baseUrl}}/{{orderId}}/status"
+      }
+    }
+  ],
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:8001/orders"},
+    {"key": "orderId", "value": "1"}
+  ]
+}

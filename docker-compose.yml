@@ -1,13 +1,13 @@
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
     image: postgres:15
     container_name: postgres_db
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-shop}
     ports:
       - "5432:5432"
     volumes:
@@ -15,20 +15,20 @@ services:
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 2s
       timeout: 2s
       retries: 5
 
-  app:
+  catalog:
     build:
-        context: app
-        dockerfile: Dockerfile
-    container_name: fast-api_app
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: fast-api-catalog
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres_db:5432/${POSTGRES_DB}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-shop}
     depends_on:
       postgres:
         condition: service_healthy
@@ -36,6 +36,43 @@ services:
       - app-network
     volumes:
       - ./app:/app
+    command:
+      [
+        "uvicorn",
+        "catalog_main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+      ]
+
+  orders:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: fast-api-orders
+    ports:
+      - "8001:8000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-shop}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      catalog:
+        condition: service_started
+    networks:
+      - app-network
+    volumes:
+      - ./app:/app
+    command:
+      [
+        "uvicorn",
+        "orders_main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+      ]
 
 networks:
   app-network:
